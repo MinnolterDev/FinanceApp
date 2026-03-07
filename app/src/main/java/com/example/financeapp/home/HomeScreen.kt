@@ -1,6 +1,14 @@
 package com.example.financeapp.home
 
 import android.R
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,7 +38,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CreditCard
 import androidx.compose.material.icons.rounded.History
@@ -199,6 +206,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun KeyboardScreen(
     modifier: Modifier = Modifier,
@@ -220,6 +228,11 @@ fun KeyboardScreen(
             else -> 80.sp
         }
     }
+    // Animate displayFontSize
+    val animatedFontSize by animateFloatAsState(
+        targetValue = displayFontSize.value,
+        animationSpec = tween(durationMillis = 200)
+    )
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -241,12 +254,13 @@ fun KeyboardScreen(
                     },
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.Bold,
-                        fontSize = displayFontSize
+                        fontSize = animatedFontSize.sp
                     ),
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Visible
                 )
+
             }
 
             Spacer(modifier = Modifier.weight(1f))
@@ -280,11 +294,8 @@ fun KeyboardScreen(
                                             onClick = {
                                                 if (!isNavigating) {
                                                     isNavigating = true
-
-                                                    scope.launch {
-                                                        haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
-                                                        navController.popBackStack()
-                                                    }
+                                                    haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
+                                                    navController.popBackStack()
                                                 }
                                             }
                                         )
@@ -294,25 +305,15 @@ fun KeyboardScreen(
                                             icon = Icons.AutoMirrored.Filled.Backspace,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                             onClick = {
-                                                scope.launch {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
-                                                    input = input.dropLast(1)
-                                                }
+                                                haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
+                                                input = input.dropLast(1)
                                             },
                                             onLongClick = {
-
-                                                TODO(
-                                                    "Currently, the entire screen recomposes when the back button" +
-                                                            "is long pressed. Maybe make the display logic its own compsable" +
-                                                            "that cares only about display, so the screen doesnt have to recompose" +
-                                                            "eveytime"
-                                                )
-
                                                 scope.launch {
                                                     while (input.isNotEmpty()) {
-                                                        haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
+                                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                         input = input.dropLast(1)
-                                                        delay(100)
+                                                        delay(40)
                                                     }
                                                 }
                                             }
@@ -326,11 +327,10 @@ fun KeyboardScreen(
                                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                         onClick = {
-                                            scope.launch {
-                                                if (input.isNotEmpty()) {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    navController.navigate("expenseTypeSelector")
-                                                }
+                                            if (!isNavigating && input.isNotEmpty()) {
+                                                isNavigating = true
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                navController.navigate("expenseTypeSelector")
                                             }
                                         }
                                     )
@@ -341,9 +341,7 @@ fun KeyboardScreen(
                                         symbol = key,
                                         onClick = {
                                             if (input.length < 12) {
-                                                if (key == "0" && input == "") {
-                                                    return@SquareKeyboardButton
-                                                }
+                                                if (key == "0" && input == "") return@SquareKeyboardButton
                                                 input += key
                                                 haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
                                             }
@@ -359,8 +357,6 @@ fun KeyboardScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun SquareKeyboardButton(
     modifier: Modifier = Modifier,
@@ -369,11 +365,17 @@ fun SquareKeyboardButton(
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit = {},
-    onLongClick: () -> Unit = {}
+    onLongClick: (() -> Unit)? = null
 ) {
     Surface(
-        onClick = onClick,
-        modifier = modifier.aspectRatio(1.2f),
+        // Use combinedClickable for long press support
+        modifier = modifier
+            .aspectRatio(1.2f)
+            .clip(RoundedCornerShape(16.dp))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(16.dp),
         color = containerColor,
         contentColor = contentColor

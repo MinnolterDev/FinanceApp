@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,11 +45,17 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFloatingActionButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.financeapp.AppViewModel
 import kotlinx.coroutines.launch
 
@@ -70,12 +78,15 @@ fun ExpenseTypeSelector(
         }
     }
 
+    var showBottomSheet by remember { mutableStateOf(false) }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { 
-                     // Add logic to open a dialog to add a category or item
+                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    showBottomSheet = true
                 },
                 modifier = Modifier.padding(bottom = 84.dp, end = 16.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -168,6 +179,46 @@ fun ExpenseTypeSelector(
                         }
                     }
                 }
+            }
+        }
+        if (showBottomSheet) {
+            AddCategorySheet(
+                onDismiss = {
+                    showBottomSheet = false
+                }
+            ) {}
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddCategorySheet(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    var text by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false
+    )
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+       // windowInsets = WindowInsets.ime,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(23.dp),
+
+        ) {
+            item {
+                TextField(
+                    value = text,
+                    onValueChange = { newText -> text = newText },
+                    label = { Text("Enter Category") },
+                )
             }
         }
     }

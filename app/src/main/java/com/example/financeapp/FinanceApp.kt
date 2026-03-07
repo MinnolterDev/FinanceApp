@@ -131,16 +131,16 @@ fun FloatingNavigationBar(
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
-        tonalElevation = 12.dp,
-        shadowElevation = 8.dp,
+        tonalElevation = 1000.dp,
+        shadowElevation = 50.dp,
         border = BorderStroke(
-            width = 0.5.dp,
+            width = 0.25.dp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
         ),
         modifier = modifier
             .padding(bottom = 30.dp)
             .height(72.dp)
-            .width(220.dp),
+            .width(190.dp),
     ) {
         Row(
             modifier = Modifier.padding(4.dp),
